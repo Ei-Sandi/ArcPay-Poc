@@ -391,69 +391,49 @@ const CheckoutDemo = () => {
             
             setPaymentStatus('Please confirm both transactions in MetaMask...');
             
-            // Add progress monitoring
-            let progressTimer;
-            let elapsedSeconds = 0;
-            let result; // Declare result outside try block
+            // Add timeout wrapper - Bridge Kit can hang indefinitely
+            console.log('=== STARTING BRIDGE TRANSFER ===');
+            console.log('Source chain:', sourceChainName);
+            console.log('Destination chain:', destinationChainName);
+            console.log('Amount:', total.toFixed(2));
+            console.log('Wallet adapter:', walletAdapter);
+            console.log('================================');
             
-            progressTimer = setInterval(() => {
-                elapsedSeconds += 10;
-                const minutes = Math.floor(elapsedSeconds / 60);
-                const seconds = elapsedSeconds % 60;
-                setPaymentStatus(`⏳ Processing bridge transfer... ${minutes}m ${seconds}s\n(CCTP attestation typically takes 10-20 minutes)\n\nYour transaction has been submitted. Please keep this page open.`);
-                console.log(`Bridge operation in progress: ${minutes}m ${seconds}s elapsed`);
-            }, 10000); // Update every 10 seconds
+            const bridgeWithTimeout = Promise.race([
+                bridgeKit.bridge({
+                    from: { 
+                        adapter: walletAdapter, 
+                        chain: sourceChainName 
+                    },
+                    to: { 
+                        adapter: walletAdapter, // Same wallet, different chain
+                        chain: destinationChainName 
+                    },
+                    amount: total.toFixed(2)
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Bridge operation timed out after 25 minutes. Your transaction was submitted but attestation is taking longer than expected. This is unusual - please check Circle Scan or block explorer for status.')), 1500000) // 25 min timeout
+                )
+            ]);
             
-            try {
-                // Add timeout wrapper - Bridge Kit can hang indefinitely
-                console.log('=== STARTING BRIDGE TRANSFER ===');
-                console.log('Source chain:', sourceChainName);
-                console.log('Destination chain:', destinationChainName);
-                console.log('Amount:', total.toFixed(2));
-                console.log('Wallet adapter:', walletAdapter);
-                console.log('================================');
-                
-                const bridgeWithTimeout = Promise.race([
-                    bridgeKit.bridge({
-                        from: { 
-                            adapter: walletAdapter, 
-                            chain: sourceChainName 
-                        },
-                        to: { 
-                            adapter: walletAdapter, // Same wallet, different chain
-                            chain: destinationChainName 
-                        },
-                        amount: total.toFixed(2)
-                    }),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Bridge operation timed out after 25 minutes. Your transaction was submitted but attestation is taking longer than expected. This is unusual - please check Circle Scan or block explorer for status.')), 1500000) // 25 min timeout
-                    )
-                ]);
-                
-                result = await bridgeWithTimeout;
-                
-                clearInterval(progressTimer); // Stop progress timer
-                
-                console.log('=== BRIDGE KIT COMPLETE ===');
-                console.log('Result state:', result.state);
-                console.log('Result error:', result.error);
-                console.log('Result steps:', result.steps);
-                console.log('Step details:');
-                result.steps?.forEach((step, index) => {
-                    console.log(`  Step ${index}:`, {
-                        name: step.name,
-                        state: step.state,
-                        txHash: step.txHash,
-                        error: step.error,
-                        data: step.data
-                    });
+            const result = await bridgeWithTimeout;
+            
+            console.log('=== BRIDGE KIT COMPLETE ===');
+            console.log('Result state:', result.state);
+            console.log('Result error:', result.error);
+            console.log('Result steps:', result.steps);
+            console.log('Step details:');
+            result.steps?.forEach((step, index) => {
+                console.log(`  Step ${index}:`, {
+                    name: step.name,
+                    state: step.state,
+                    txHash: step.txHash,
+                    error: step.error,
+                    data: step.data
                 });
-                console.log('Full result object:', result);
-                console.log('=========================');
-            } catch (bridgeError) {
-                clearInterval(progressTimer); // Stop progress timer on error
-                throw bridgeError;
-            }
+            });
+            console.log('Full result object:', result);
+            console.log('=========================')
             
             setPaymentStatus('Bridge transfer in progress...');
             

@@ -12,12 +12,6 @@ app.use(cors());
 const SETTINGS_FILE = path.join(__dirname, 'merchantSettings.json');
 const PAYMENTS_FILE = path.join(__dirname, 'payments.json');
 
-const RPC_ENDPOINTS = {
-    'ARC_TESTNET': 'https://rpc.blockdaemon.testnet.arc.network',
-    'ETHEREUM_SEPOLIA': 'https://rpc.sepolia.org',
-    'POLYGON_AMOY': 'https://rpc-amoy.polygon.technology/'
-};
-
 // Helper function to read merchant settings
 async function getMerchantSettings() {
     try {
@@ -86,36 +80,6 @@ app.post('/api/merchant/settings', async (req, res) => {
     } catch (error) {
         console.error('Error in save settings endpoint:', error);
         res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// GET endpoint to retrieve RPC configurations
-app.get('/api/rpc-config', (req, res) => {
-    res.json({
-        success: true,
-        rpcEndpoints: RPC_ENDPOINTS
-    });
-});
-
-// GET endpoint to retrieve payment history
-app.get('/api/payments', async (req, res) => {
-    try {
-        let payments = [];
-        try {
-            const data = await fs.readFile(PAYMENTS_FILE, 'utf8');
-            payments = JSON.parse(data);
-        } catch (err) {
-            // File doesn't exist yet, return empty array
-        }
-
-        res.json({
-            success: true,
-            count: payments.length,
-            payments: payments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // newest first
-        });
-    } catch (error) {
-        console.error('Error retrieving payments:', error);
-        res.status(500).json({ error: 'Failed to retrieve payment history' });
     }
 });
 
