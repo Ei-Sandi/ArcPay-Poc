@@ -7,10 +7,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@circle-fin/adapter-viem-v2": "^1.0.0",
+    "@circle-fin/bridge-kit": "^1.1.1",
     "@vitejs/plugin-react": "^5.1.1",
+    "ethers": "^6.15.0",
     "lucide-react": "^0.263.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "viem": "^2.21.53",
     "vite": "^7.2.2"
   }
 }

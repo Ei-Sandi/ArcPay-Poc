@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Activity, BarChart3, Save, CheckCircle, Clock, XCircle, Store } from 'lucide-react';
 
 const MerchantDashboard = () => {
@@ -6,6 +6,28 @@ const MerchantDashboard = () => {
     const [walletAddress, setWalletAddress] = useState('');
     const [destinationChain, setDestinationChain] = useState('ARC_TESTNET');
     const [saveStatus, setSaveStatus] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load merchant settings on component mount
+    useEffect(() => {
+        loadSettings();
+    }, []);
+
+    const loadSettings = async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/merchant/settings');
+            if (response.ok) {
+                const settings = await response.json();
+                setWalletAddress(settings.destinationWallet || '');
+                setDestinationChain(settings.destinationChain || 'ARC_TESTNET');
+            }
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const transactions = [
         { id: 1, date: '2024-11-15 14:32', amount: '50.00 USDC', sourceChain: 'Ethereum Sepolia', destinationChain: 'Arc Testnet', status: 'Complete' },
@@ -138,40 +160,46 @@ const MerchantDashboard = () => {
                 {activeTab === 'settings' && (
                     <div className="max-w-2xl">
                         <h2 className="text-xl font-semibold text-orange-800 mb-6">Payment Configuration</h2>
-                        <div className="bg-orange-50 rounded-lg p-8 border border-orange-100 space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-orange-800 mb-2">Destination Wallet Address</label>
-                                <input type="text" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} placeholder="0x..." className="w-full px-4 py-3 bg-white border border-orange-200 rounded-lg text-orange-800 placeholder-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" />
-                                <p className="text-xs text-orange-600 mt-2">This is where all your payments will be sent after cross-chain transfer</p>
+                        {isLoading ? (
+                            <div className="bg-orange-50 rounded-lg p-8 border border-orange-100 flex items-center justify-center">
+                                <div className="text-orange-600">Loading settings...</div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-orange-800 mb-2">Destination Chain</label>
-                                <select value={destinationChain} onChange={(e) => setDestinationChain(e.target.value)} className="w-full px-4 py-3 bg-white border border-orange-200 rounded-lg text-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                                    <option value="ARC_TESTNET">Arc Testnet</option>
-                                    <option value="ETHEREUM_SEPOLIA">Ethereum Sepolia</option>
-                                    <option value="POLYGON_AMOY">Polygon Amoy</option>
-                                </select>
-                                <p className="text-xs text-orange-600 mt-2">Select which blockchain you want to receive payments on</p>
+                        ) : (
+                            <div className="bg-orange-50 rounded-lg p-8 border border-orange-100 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-orange-800 mb-2">Destination Wallet Address</label>
+                                    <input type="text" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} placeholder="0x..." className="w-full px-4 py-3 bg-white border border-orange-200 rounded-lg text-orange-800 placeholder-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" />
+                                    <p className="text-xs text-orange-600 mt-2">This is where all your payments will be sent after cross-chain transfer</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-orange-800 mb-2">Destination Chain</label>
+                                    <select value={destinationChain} onChange={(e) => setDestinationChain(e.target.value)} className="w-full px-4 py-3 bg-white border border-orange-200 rounded-lg text-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                        <option value="ARC_TESTNET">Arc Testnet</option>
+                                        <option value="ETHEREUM_SEPOLIA">Ethereum Sepolia</option>
+                                        <option value="POLYGON_AMOY">Polygon Amoy</option>
+                                    </select>
+                                    <p className="text-xs text-orange-600 mt-2">Select which blockchain you want to receive payments on</p>
+                                </div>
+                                <div className="pt-4">
+                                    <button onClick={handleSaveSettings} disabled={saveStatus === 'saving'} className="w-full bg-gradient-to-r from-orange-600 to-amber-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-700 hover:to-amber-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <Save className="w-5 h-5" />
+                                        {saveStatus === 'saving' ? 'Saving...' : 'Save Settings'}
+                                    </button>
+                                    {saveStatus === 'success' && (
+                                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            Settings saved successfully!
+                                        </div>
+                                    )}
+                                    {saveStatus === 'error' && (
+                                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                                            <XCircle className="w-4 h-4" />
+                                            Failed to save settings. Please try again.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="pt-4">
-                                <button onClick={handleSaveSettings} disabled={saveStatus === 'saving'} className="w-full bg-gradient-to-r from-orange-600 to-amber-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-700 hover:to-amber-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <Save className="w-5 h-5" />
-                                    {saveStatus === 'saving' ? 'Saving...' : 'Save Settings'}
-                                </button>
-                                {saveStatus === 'success' && (
-                                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Settings saved successfully!
-                                    </div>
-                                )}
-                                {saveStatus === 'error' && (
-                                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
-                                        <XCircle className="w-4 h-4" />
-                                        Failed to save settings. Please try again.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>

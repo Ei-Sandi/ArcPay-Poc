@@ -1,0 +1,33 @@
+[
+  {
+    "timestamp": "2025-11-15T18:11:51.720Z",
+    "burnTxHash": "0x6781247e6382e1e56c89fcc6f53757d6809c9359fbaf6444b2c379bea488f1ef",
+    "mintTxHash": "0x56f529d0a48db3ed98f4453e671eacffe2948b1ee0a53f8036545d12d43fc5ea",
+    "amount": "0.02",
+    "sourceChain": "Base Sepolia",
+    "destinationChain": "ARC TESTNET",
+    "merchantWallet": "0x2385d2c44622406b2ac5e6cc2d9474dfa09c94e8",
+    "status": "completed",
+    "bridgeKitSteps": [
+      {
+        "name": "approve",
+        "state": "success",
+        "txHash": "0x862e74594b359b9ebde0175e8a307335c498df0c2d36d928cc4a352652f77115"
+      },
+      {
+        "name": "burn",
+        "state": "success",
+        "txHash": "0x6781247e6382e1e56c89fcc6f53757d6809c9359fbaf6444b2c379bea488f1ef"
+      },
+      {
+        "name": "fetchAttestation",
+        "state": "success"
+      },
+      {
+        "name": "mint",
+        "state": "success",
+        "txHash": "0x56f529d0a48db3ed98f4453e671eacffe2948b1ee0a53f8036545d12d43fc5ea"
+      }
+    ]
+  }
+]

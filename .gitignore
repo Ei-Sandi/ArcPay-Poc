@@ -4,6 +4,9 @@ node_modules/
 # Environment variables
 .env
 
+# Merchant settings (contains merchant-specific configuration)
+backend/merchantSettings.json
+
 # Logs
 logs/
 *.log
