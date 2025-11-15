@@ -28,3 +28,16 @@ coverage/
 # Misc
 *.swp
 *.swo
+ 
+# Vite build output and cache
+frontend/dist/
+frontend/.vite/
+.vite/
+
+# IDE/editor folders
+.idea/
+*.iml
+
+# Temporary files
+*.tmp
+*.temp
