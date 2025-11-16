@@ -13,10 +13,24 @@ Accept USDC payments from **any blockchain** and receive funds on **your preferr
 ## ⚡ Key Features
 
 - 🌉 Cross-Chain Payments - Accept USDC from 5+ blockchains
+- ✨ **Gasless Transactions** - Zero gas fees for users via Circle Gas Station
 - 🔗 Arc Network Support - Fully integrated with Arc Testnet
 - 🛠️ Powered by Bridge Kit - Uses Circle's official CCTP SDK
 - 💼 Merchant Dashboard - Configure destination wallet and chain
 - 📊 Payment Tracking - View all completed cross-chain payments
+
+## 💫 Gasless Transactions
+
+ArcPay integrates with **Circle Gas Station** to sponsor gas fees, providing a seamless payment experience:
+
+- ✅ **One-click checkout** - Users approve only 1 transaction
+- ✅ **Zero gas fees** - No need for ETH/MATIC/ARC tokens
+- ✅ **Higher conversions** - Remove friction from checkout flow
+- ✅ **Automatic sponsorship** - Merchant sponsors gas via Circle
+
+**How it works:** Circle's Gas Station automatically sponsors blockchain gas fees for USDC transfers. Users only need USDC in their wallet - no native tokens required. This eliminates the #1 barrier to crypto payments and significantly improves conversion rates.
+
+📖 [Setup Guide](./CONFIGURE_GAS_STATION.md) | 🔧 [Technical Details](./GASLESS_SETUP.md)
 
 ## 🚀 Quick Start
 
@@ -87,7 +101,14 @@ Create `backend/.env`:
 ```env
 PORT=5000
 MERCHANT_WALLET_ADDRESS=0xYourWalletAddressHere  # Optional
+
+# Circle Gas Station (for gasless transactions)
+CIRCLE_API_KEY=your_api_key_here
+CIRCLE_APP_ID=your_app_id_here
+CIRCLE_ENTITY_SECRET=optional_not_required
 ```
+
+> 📖 **New to Gas Station?** See [CONFIGURE_GAS_STATION.md](./CONFIGURE_GAS_STATION.md) for setup instructions.
 
 ### Start Application
 

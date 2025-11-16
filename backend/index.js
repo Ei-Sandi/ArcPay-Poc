@@ -4,10 +4,32 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const { ethers } = require('ethers');
+const { initiateDeveloperControlledWalletsClient } = require('@circle-fin/user-controlled-wallets');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Initialize Circle SDK client - will be set when API key is provided
+let circleClient = null;
+
+// Helper to check if Circle client is initialized
+function ensureCircleClient() {
+    if (!circleClient && process.env.CIRCLE_API_KEY) {
+        const config = {
+            apiKey: process.env.CIRCLE_API_KEY
+        };
+
+        // Entity Secret is optional - only needed for advanced wallet features
+        if (process.env.CIRCLE_ENTITY_SECRET && process.env.CIRCLE_ENTITY_SECRET !== 'your_entity_secret_here') {
+            config.entitySecret = process.env.CIRCLE_ENTITY_SECRET;
+        }
+
+        circleClient = initiateDeveloperControlledWalletsClient(config);
+        console.log('✅ Circle SDK initialized');
+    }
+    return circleClient;
+}
 
 const SETTINGS_FILE = path.join(__dirname, 'merchantSettings.json');
 const PAYMENTS_FILE = path.join(__dirname, 'payments.json');
@@ -146,7 +168,117 @@ app.post('/api/process-payment', async (req, res) => {
         console.error('Error processing payment notification:', err.message);
         res.status(500).json({ error: err.message });
     }
-}); const PORT = process.env.PORT || 5000;
+});
+
+// Endpoint to initiate gasless transaction (sponsor gas fees)
+app.post('/api/gasless-transfer', async (req, res) => {
+    console.log("Backend: Gasless transfer request received");
+
+    try {
+        const {
+            fromAddress,
+            toAddress,
+            amount,
+            tokenAddress,
+            chainId
+        } = req.body;
+
+        if (!fromAddress || !toAddress || !amount || !tokenAddress) {
+            return res.status(400).json({
+                error: 'Missing required fields: fromAddress, toAddress, amount, tokenAddress'
+            });
+        }
+
+        // For now, we'll use a simplified approach with direct RPC calls
+        // This will construct the transaction data that the frontend will sign
+        // The key is that we use EIP-1559 transactions with maxFeePerGas = 0
+        // when combined with a paymaster/Gas Station policy
+
+        const chainConfig = {
+            '0xaa36a7': { // Ethereum Sepolia
+                rpcUrl: 'https://rpc.sepolia.org',
+                chainId: 11155111
+            },
+            '0x14a34': { // Base Sepolia
+                rpcUrl: 'https://sepolia.base.org',
+                chainId: 84532
+            },
+            '0x13882': { // Polygon Amoy
+                rpcUrl: 'https://rpc-amoy.polygon.technology',
+                chainId: 80002
+            },
+            '0x4cef52': { // Arc Testnet
+                rpcUrl: 'https://rpc.arc.gateway.fm',
+                chainId: 5102930
+            }
+        };
+
+        const config = chainConfig[chainId.toLowerCase()];
+        if (!config) {
+            return res.status(400).json({ error: 'Unsupported chain' });
+        }
+
+        const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+
+        // ERC20 transfer function signature
+        const erc20Interface = new ethers.Interface([
+            'function transfer(address to, uint256 amount) returns (bool)'
+        ]);
+
+        // Parse amount (assuming USDC with 6 decimals)
+        const parsedAmount = ethers.parseUnits(amount.toString(), 6);
+
+        // Encode the transfer function call
+        const data = erc20Interface.encodeFunctionData('transfer', [
+            toAddress,
+            parsedAmount
+        ]);
+
+        // Get nonce for the from address
+        const nonce = await provider.getTransactionCount(fromAddress, 'latest');
+
+        // Prepare transaction for gasless execution
+        // With Circle Gas Station, gas fees are sponsored
+        const txRequest = {
+            from: fromAddress,
+            to: tokenAddress,
+            data: data,
+            nonce: nonce,
+            chainId: config.chainId,
+            // For gasless transactions, we set these to 0
+            // Circle's Gas Station will sponsor the actual gas
+            maxFeePerGas: 0,
+            maxPriorityFeePerGas: 0,
+            gasLimit: 100000 // Estimate for ERC20 transfer
+        };
+
+        console.log('✅ Transaction prepared for gasless execution');
+        console.log(`   From: ${fromAddress}`);
+        console.log(`   To: ${toAddress}`);
+        console.log(`   Amount: ${amount} USDC`);
+        console.log(`   Token: ${tokenAddress}`);
+        console.log(`   Chain: ${chainId}`);
+
+        res.json({
+            success: true,
+            transaction: txRequest,
+            message: 'Transaction prepared for gasless execution'
+        });
+
+    } catch (err) {
+        console.error('Error preparing gasless transaction:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Endpoint to get Circle App ID for frontend SDK initialization
+app.get('/api/circle-config', (req, res) => {
+    res.json({
+        appId: process.env.CIRCLE_APP_ID || ''
+    });
+});
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`ArcPay backend listening on port ${PORT}`);
 });

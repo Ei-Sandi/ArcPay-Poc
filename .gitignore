@@ -7,6 +7,9 @@ node_modules/
 # Merchant settings (contains merchant-specific configuration)
 backend/merchantSettings.json
 
+# Payment records (contains transaction logs)
+backend/payments.json
+
 # Logs
 logs/
 *.log
